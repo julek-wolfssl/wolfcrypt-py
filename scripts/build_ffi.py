@@ -408,6 +408,13 @@ def detect_features(defines, features, fips=False):
     # Unlike the other fatures, HASHDRBG is enabled by default in random.h, unless WC_NO_HASHDRBG or
     # CUSTOM_RAND_GENERATE_BLOCK is defined.
     features["HASHDRBG"] = 0 if ("#define WC_NO_HASHDRBG" in defines or "#define CUSTOM_RAND_GENERATE_BLOCK" in defines) else 1
+    # random.h replaces the RNG API with macros under WC_NO_RNG. random.c and
+    # rsa.c then build no DRBG, seed callback or RSA blinding functions.
+    features["RNG"] = 0 if defined("WC_NO_RNG") else 1
+    if not features["RNG"]:
+        features["HASHDRBG"] = 0
+        features["WC_RNG_SEED_CB"] = 0
+        features["RSA_BLINDING"] = 0
     # aes.h declares wc_AesCtrEncrypt only with WOLFSSL_AES_COUNTER.
     features["AES_CTR"] = 1 if features["AES"] and defined("WOLFSSL_AES_COUNTER") else 0
     # settings.h derives HAVE_AES_CBC and HAVE_AES_DECRYPT unless NO_AES_CBC/NO_AES_DECRYPT.
@@ -582,6 +589,7 @@ def make_source(features):
         int PEM_TO_DER_ENABLED = {features["PEM_TO_DER"]};
         int DER_TO_PEM_ENABLED = {features["DER_TO_PEM"]};
         int PKCS8_ENABLED = {features["PKCS8"]};
+        int RNG_ENABLED = {features["RNG"]};
     """
 
     return init_source_string
@@ -636,20 +644,23 @@ def make_cdef(features):
         extern int PEM_TO_DER_ENABLED;
         extern int DER_TO_PEM_ENABLED;
         extern int PKCS8_ENABLED;
+        extern int RNG_ENABLED;
 
         typedef unsigned char byte;
         typedef unsigned int word32;
 
         typedef struct { ...; } WC_RNG;
         typedef struct { ...; } OS_Seed;
-
+    """
+    if features["RNG"]:
+        cdef += """
         int wc_InitRng(WC_RNG*);
         int wc_InitRngNonce(WC_RNG*, byte*, word32);
         int wc_InitRngNonce_ex(WC_RNG*, byte*, word32, void*, int);
         int wc_RNG_GenerateBlock(WC_RNG*, byte*, word32);
         int wc_RNG_GenerateByte(WC_RNG*, byte*);
         int wc_FreeRng(WC_RNG*);
-    """
+        """
     if features["HASHDRBG"]:
         cdef += """
         int wc_RNG_DRBG_Reseed(WC_RNG*, const byte*, word32);
@@ -919,7 +930,7 @@ def make_cdef(features):
         const char* wc_GetErrorString(int error);
         """
 
-    if not features["FIPS"] or features["FIPS_VERSION"] > 2:
+    if features["RNG"] and (not features["FIPS"] or features["FIPS_VERSION"] > 2):
         cdef += """
         int wc_GenerateSeed(OS_Seed* os, byte* seed, word32 sz);
         """
@@ -1500,6 +1511,7 @@ def default_features():
         "PEM_TO_DER": 1,
         "DER_TO_PEM": 1,
         "PKCS8": 1,
+        "RNG": 1,
     }
 
     # Ed448 requires SHAKE256, which isn't part of the Windows build, yet.
