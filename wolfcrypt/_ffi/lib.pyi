@@ -24,6 +24,7 @@ from typing import TypeAlias
 INVALID_DEVID: int
 
 AES_ENABLED: int
+AES_CTR_ENABLED: int
 AES_SIV_ENABLED: int
 AESGCM_STREAM_ENABLED: int
 ASN_ENABLED: int
