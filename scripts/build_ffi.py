@@ -363,35 +363,35 @@ def detect_features(defines, features, fips=False):
     def defined(name):
         return re.search(rf"^\s*#\s*define\s+{name}\b", text, re.MULTILINE) is not None
 
-    features["MPAPI"] = 1 if '#define WOLFSSL_PUBLIC_MP' in defines else 0
-    features["SHA"] = 0 if '#define NO_SHA' in defines else 1
-    features["SHA256"] = 0 if '#define NO_SHA256' in defines else 1
-    features["SHA384"] = 1 if '#define WOLFSSL_SHA384' in defines else 0
-    features["SHA512"] = 1 if '#define WOLFSSL_SHA512' in defines else 0
-    features["SHA3"] = 1 if '#define WOLFSSL_SHA3' in defines else 0
-    features["DES3"] = 0 if '#define NO_DES3' in defines else 1
-    features["AES"] = 0 if '#define NO_AES' in defines else 1
-    features["AES_SIV"] = 1 if '#define WOLFSSL_AES_SIV' in defines else 0
-    features["CHACHA"] = 1 if '#define HAVE_CHACHA' in defines else 0
-    features["HMAC"] = 0 if '#define NO_HMAC' in defines else 1
-    features["RSA"] = 0 if '#define NO_RSA' in defines else 1
-    features["ECC_TIMING_RESISTANCE"] = 1 if '#define ECC_TIMING_RESISTANT' in defines else 0
-    features["RSA_BLINDING"] = 1 if '#define WC_RSA_BLINDING' in defines else 0
-    features["ECC"] = 1 if '#define HAVE_ECC' in defines else 0
-    features["ED25519"] = 1 if '#define HAVE_ED25519' in defines else 0
-    features["ED448"] = 1 if '#define HAVE_ED448' in defines else 0
-    features["KEYGEN"] = 1 if '#define WOLFSSL_KEY_GEN' in defines else 0
-    features["PWDBASED"] = 0 if '#define NO_PWDBASED' in defines else 1
-    features["ERROR_STRINGS"] = 0 if '#define NO_ERROR_STRINGS' in defines else 1
-    features["ASN"] = 0 if '#define NO_ASN' in defines else 1
-    features["WC_RNG_SEED_CB"] = 1 if '#define WC_RNG_SEED_CB' in defines else 0
-    features["AESGCM_STREAM"] = 1 if '#define WOLFSSL_AESGCM_STREAM' in defines else 0
+    features["MPAPI"] = 1 if defined("WOLFSSL_PUBLIC_MP") else 0
+    features["SHA"] = 0 if defined("NO_SHA") else 1
+    features["SHA256"] = 0 if defined("NO_SHA256") else 1
+    features["SHA384"] = 1 if defined("WOLFSSL_SHA384") else 0
+    features["SHA512"] = 1 if defined("WOLFSSL_SHA512") else 0
+    features["SHA3"] = 1 if defined("WOLFSSL_SHA3") else 0
+    features["DES3"] = 0 if defined("NO_DES3") else 1
+    features["AES"] = 0 if defined("NO_AES") else 1
+    features["AES_SIV"] = 1 if defined("WOLFSSL_AES_SIV") else 0
+    features["CHACHA"] = 1 if defined("HAVE_CHACHA") else 0
+    features["HMAC"] = 0 if defined("NO_HMAC") else 1
+    features["RSA"] = 0 if defined("NO_RSA") else 1
+    features["ECC_TIMING_RESISTANCE"] = 1 if defined("ECC_TIMING_RESISTANT") else 0
+    features["RSA_BLINDING"] = 1 if defined("WC_RSA_BLINDING") else 0
+    features["ECC"] = 1 if defined("HAVE_ECC") else 0
+    features["ED25519"] = 1 if defined("HAVE_ED25519") else 0
+    features["ED448"] = 1 if defined("HAVE_ED448") else 0
+    features["KEYGEN"] = 1 if defined("WOLFSSL_KEY_GEN") else 0
+    features["PWDBASED"] = 0 if defined("NO_PWDBASED") else 1
+    features["ERROR_STRINGS"] = 0 if defined("NO_ERROR_STRINGS") else 1
+    features["ASN"] = 0 if defined("NO_ASN") else 1
+    features["WC_RNG_SEED_CB"] = 1 if defined("WC_RNG_SEED_CB") else 0
+    features["AESGCM_STREAM"] = 1 if defined("WOLFSSL_AESGCM_STREAM") else 0
     # Try to read minimum AESGCM authentication tag size from settings, else use default.
     min_auth_tag_sz = re.search(r'#define\s+WOLFSSL_MIN_AUTH_TAG_SZ\s+(\d+)', '\n'.join(defines))
     features["MIN_AUTH_TAG_SZ"] = int(min_auth_tag_sz.group(1)) if min_auth_tag_sz else 12
-    features["RSA_PSS"] = 1 if '#define WC_RSA_PSS' in defines else 0
-    features["CHACHA20_POLY1305"] = 1 if ('#define HAVE_CHACHA' in defines and '#define HAVE_POLY1305' in defines) else 0
-    features["ML_DSA"] = 1 if ('#define HAVE_DILITHIUM' in defines or '#define WOLFSSL_HAVE_MLDSA' in defines) else 0
+    features["RSA_PSS"] = 1 if defined("WC_RSA_PSS") else 0
+    features["CHACHA20_POLY1305"] = 1 if (defined("HAVE_CHACHA") and defined("HAVE_POLY1305")) else 0
+    features["ML_DSA"] = 1 if (defined("HAVE_DILITHIUM") or defined("WOLFSSL_HAVE_MLDSA")) else 0
     # Determine if support for ML-DSA signing & verification without context has been enabled.
     mldsa_no_context_defines = [
         "WOLFSSL_MLDSA_NO_CTX",
@@ -401,12 +401,12 @@ def detect_features(defines, features, fips=False):
         "WOLFSSL_DILITHIUM_FIPS204_DRAFT",
     ]
     features["ML_DSA_NO_CTX"] = 1 if any(defined(name) for name in mldsa_no_context_defines) else 0
-    features["ML_KEM"] = 1 if '#define WOLFSSL_HAVE_MLKEM'  in defines else 0
+    features["ML_KEM"] = 1 if defined("WOLFSSL_HAVE_MLKEM") else 0
     # hmac.h and hmac.c provide HKDF only without NO_HMAC.
-    features["HKDF"] = 1 if "#define HAVE_HKDF" in defines and features["HMAC"] else 0
+    features["HKDF"] = 1 if defined("HAVE_HKDF") and features["HMAC"] else 0
     # Unlike the other fatures, HASHDRBG is enabled by default in random.h, unless WC_NO_HASHDRBG or
     # CUSTOM_RAND_GENERATE_BLOCK is defined.
-    features["HASHDRBG"] = 0 if ("#define WC_NO_HASHDRBG" in defines or "#define CUSTOM_RAND_GENERATE_BLOCK" in defines) else 1
+    features["HASHDRBG"] = 0 if (defined("WC_NO_HASHDRBG") or defined("CUSTOM_RAND_GENERATE_BLOCK")) else 1
     # random.h replaces the RNG API with macros under WC_NO_RNG. random.c and
     # rsa.c then build no DRBG, seed callback or RSA blinding functions.
     features["RNG"] = 0 if defined("WC_NO_RNG") else 1
@@ -495,7 +495,7 @@ def detect_features(defines, features, fips=False):
     features["ML_DSA_PRIVATE_KEY"] = 1 if ml_dsa and (not mldsa_no_make_key or not mldsa_no_sign
         or mldsa_defined("PRIVATE_KEY")) else 0
 
-    if '#define HAVE_FIPS' in defines:
+    if defined("HAVE_FIPS"):
         if not fips:
             e = "fips.c empty but HAVE_FIPS defined."
             raise RuntimeError(e)
